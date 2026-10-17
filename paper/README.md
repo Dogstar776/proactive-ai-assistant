@@ -42,7 +42,7 @@ python3 md2tex.py proactive-agi-theory.md -o proactive-agi-theory.tex
   author  = {吴子健},
   year    = {2026},
   note    = {开源项目 proactive-ai-assistant 随附论文},
-  url     = {https://github.com/<your-account>/proactive-ai-assistant}
+  url     = {https://github.com/Dogstar776/proactive-ai-assistant}
 }
 ```
 
