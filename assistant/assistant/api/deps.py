@@ -11,6 +11,7 @@ from pathlib import Path
 
 from assistant.config import Settings, get_settings
 from assistant.db import ThreadLocalConnection
+from assistant.gateway.reminder_service import ReminderService
 from assistant.logging_setup import get_logger
 from assistant.services.deep_cycle import DeepCycleService
 from assistant.services.observation_service import ObservationService
@@ -125,17 +126,34 @@ def _service() -> ObservationService:
 def _deep_cycle() -> DeepCycleService:
     from assistant.charter import load_charter
     from assistant.events.bus import get_bus
+    from assistant.gateway.gate import Gateway
+    from assistant.gateway.reminder_service import ReminderRepository, ReminderService
     from assistant.goals.repository import GoalRepository
     from assistant.goals.service import GoalService
     from assistant.introspection.service import IntrospectionService
-    from assistant.memory.repository import EventRepository
+    from assistant.memory.repository import AuditRepository, EventRepository
 
     conn = _connection()
     charter = load_charter()  # data/charter.yaml → docs/charter.example.yaml
     logger.info("charter.loaded source=%s domains=%d", charter.source_path, len(charter.domains))
     introspection = IntrospectionService(events=EventRepository(conn), conn=conn, bus=get_bus())
     goals = GoalService(repo=GoalRepository(conn), charter=charter, bus=get_bus())
-    return DeepCycleService(introspection=introspection, goals=goals, bus=get_bus())
+    reminders = ReminderService(
+        repo=ReminderRepository(conn),
+        gateway=Gateway(charter=charter, audit=AuditRepository(conn)),
+        goals=GoalRepository(conn),
+        charter=charter,
+        bus=get_bus(),
+        audit=AuditRepository(conn),
+    )
+    return DeepCycleService(
+        introspection=introspection, goals=goals, bus=get_bus(), reminders=reminders
+    )
+
+
+@lru_cache
+def _reminder_service() -> ReminderService:
+    return _deep_cycle().reminders
 
 
 def get_observation_service() -> ObservationService:
@@ -144,6 +162,10 @@ def get_observation_service() -> ObservationService:
 
 def get_deep_cycle_service() -> DeepCycleService:
     return _deep_cycle()
+
+
+def get_reminder_service() -> ReminderService:
+    return _reminder_service()
 
 
 def fresh_connection() -> sqlite3.Connection:

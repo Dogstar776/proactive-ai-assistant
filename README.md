@@ -2,7 +2,7 @@
 
 > 一个**诚实定位**的个人开源项目：以理论论文《主动式AGI的理论框架与落地约束》为依据，构建 FL-PCL 五层持续认知闭环的**受限常驻实例（restricted-persistence instance）**，并把它当作**实证仪器**——测量"模拟的主动性"在个人尺度上的真实表现。
 
-**当前状态：P1–P3 已完成（论文资产化 + 市面调研 + 观测层 + 自省/目标层）。30 个测试全绿。**
+**当前状态：P1–P4 已完成（论文 + 调研 + 观测 + 自省/目标 + 对齐门控）。47 个测试全绿。**
 
 ---
 
@@ -91,7 +91,7 @@ flowchart LR
 | P1 | 工程骨架 + 论文资产化 + 市面调研（仓库结构、README、LaTeX、ADRs、2026 竞品体检） | ✅ 已完成 |
 | P2 | 观测层：本地授权连接器、事件抽取管道、SQLite 事件库、审计日志、REST+SSE API | ✅ 已完成（20 测试全绿、幂等回放验证） |
 | P3 | 自省层 + 目标层：周期自省、模板化目标合成、`charter.yaml` 锚定文件 | ✅ 已完成（30 测试全绿、目标队列幂等） |
-| P4 | 对齐层 + 提醒引擎：风险三级门控、沉默-询问-协助-行动四态、批量审计 | ⬜ |
+| P4 | 对齐层 + 提醒引擎：风险三级门控、沉默-询问-协助-行动四态、批量审计 | ✅ 已完成（47 测试全绿、四态实测） |
 | P5 | 仪表盘：认知环可视化、charter 编辑器、成本面板 | ⬜ |
 | P6 | 实验与度量：OQ7 模板移除测试、OQ5 周期率剂量效应、记忆健康指标（14 天个人运行） | ⬜ |
 | P7 | 作品集化：实证论文草稿、demo 视频 | ⬜ |
@@ -154,6 +154,12 @@ uvicorn assistant.api.app:create_app --factory --host 127.0.0.1 --port 8787
 python -m scripts.run_deep_cycle
 # curl -X POST http://127.0.0.1:8787/api/v1/introspection/run  # API 触发深周期
 # curl http://127.0.0.1:8787/api/v1/goals                      # 查看目标队列
+
+# 方式四：跑一次提醒周期（四态门控，论文 3.5）
+python -m scripts.run_reminder_cycle
+# curl -X POST http://127.0.0.1:8787/api/v1/reminders/run     # 触发提醒周期
+# curl http://127.0.0.1:8787/api/v1/reminders                 # 干预台账（含被沉默的）
+# curl http://127.0.0.1:8787/api/v1/gateway/stats             # 决策分布+授权疲劳自检
 ```
 
 接入自己的数据：复制 `.env.example` 为 `.env`，设置 `COLLECTOR_ICS_PATHS` / `COLLECTOR_NOTES_PATHS` / `COLLECTOR_RSS_URLS` 后重启。

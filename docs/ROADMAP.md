@@ -39,12 +39,14 @@
 - 验证清单（全部实测通过）：ruff 全绿；30/30 测试；深周期端到端 16 事件→6 缺口→6 目标；第二轮 new_goals=0（幂等）；队列按优先级降序；charter 锚定生效（面试文本匹配 career 域拉高优先级）；suspend 后移出 active；非法 status 400
 - 详见 `docs/devlog/2026-10-17-p3-introspection-goals.md` 与 `docs/adr/0007-p3-introspection-goals-decisions.md`
 
-## P4 对齐层 + 提醒引擎 ⬜（预估 3–5 天）
+## P4 对齐层 + 提醒引擎 ✅（2026-10-17 完成）
 
-- `gateway/`：R0–R3 风险分级门控、沉默-询问-协助-行动四态、consent ledger 写入、批量审计模式
-- 提醒渠道：仪表盘 SSE + 本地系统通知（可选）
-- 冷却期与频率上限；授权疲劳自检指标（请示次数 vs 批准率）
-- 验证：两场景演练——该沉默时沉默（quiet_hours 内无打扰）、该请示时请示（R3 挂起 + 超时默认不行动）
+- `gateway/`：R0–R3 风险分级（关键词初筛，[B-simulated]）+ Gateway 四态判决（沉默条件优先：免打扰 → 冷却 → 每日预算 → 风险分级）+ 提醒引擎（目标→干预→触达/沉默/待确认）+ 超时清扫（默认拒绝）+ 批量审计 + 授权疲劳自检
+- **可审计的沉默**：每次 silence 判决写入 reminders 台账与审计日志（status=suppressed + reason），人类可区分"系统认为不该说"与"系统没说话"——论文 4.5 监督稀释问题的工程对策
+- API：`/api/v1/reminders`（run/list/approve/reject/batch）、`/api/v1/gateway/stats`；CLI `scripts/run_reminder_cycle.py`
+- 验证清单（全部实测通过）：ruff 全绿；47/47 测试；三种沉默路径单测；端到端 5 目标 → act 3 / silence 2（daily_budget 3/3 全部留痕）；二轮 5/5 沉默；approve→delivered、reject、超时 expired；疲劳指标输出
+- 当日修复：模板免责声明触发高风险词导致只读目标误判 R3（措辞规避 + 回归测试 + 局限记录，见 ADR-0008）
+- 详见 `docs/devlog/2026-10-17-p4-alignment-reminders.md` 与 `docs/adr/0008-p4-alignment-decisions.md`
 
 ## P5 仪表盘 ⬜（预估 5–7 天）
 

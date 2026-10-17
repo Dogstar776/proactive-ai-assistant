@@ -16,6 +16,7 @@ from assistant.api.routes import (
     audit,
     collectors,
     events,
+    gateway,
     goals,
     health,
     introspection,
@@ -99,4 +100,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(collectors.router)
     app.include_router(introspection.router)
     app.include_router(goals.router)
+    app.include_router(gateway.router)
     return app

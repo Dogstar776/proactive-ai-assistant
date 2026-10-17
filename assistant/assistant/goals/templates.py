@@ -52,7 +52,7 @@ class DeadlinePrepTemplate(GoalTemplate):
                 title=f"为「{self._subject(g.title)}」做截止前准备",
                 description=(
                     f"{g.detail}。本目标为只读型认知目标（R1）：整理材料、列出清单，"
-                    f"不对外发送、不修改原事项。"
+                    f"不涉及对外动作，不修改原始事项。"
                 ),
                 template_id=self.template_id,
                 info_gain=g.score,
@@ -88,7 +88,7 @@ class ThemeClusterTemplate(GoalTemplate):
                 title=f"梳理「{self._subject(g.title)}」相关事项清单",
                 description=(
                     f"{g.detail}。本目标为只读型认知目标（R1）：汇总相关事件、"
-                    f"形成一份主题笔记，不修改原始数据。"
+                    f"形成一份主题笔记，不涉及对外动作，不修改原始数据。"
                 ),
                 template_id=self.template_id,
                 info_gain=g.score,
@@ -126,7 +126,7 @@ class ContradictionTemplate(GoalTemplate):
             description=(
                 "；".join(g.title for g in items)
                 + "。本目标为只读型认知目标（R1）：列出待处理项供人类确认，"
-                "不自动删除任何原始记录。"
+                "不自动改动任何原始记录。"
             ),
             template_id=self.template_id,
             info_gain=max(g.score for g in items),
