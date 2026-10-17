@@ -1,0 +1,38 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//proactive-ai-assistant//seed//CN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:seed-interview-001@proactive
+SUMMARY:某国企数字化运营岗 视频面试
+DESCRIPTION:岗位：省属金融国企 数字化转型·运营方向。需准备：项目陈述 5 分钟 + 数字化认知问答。联系人：HR 王老师。
+DTSTART:20261021T140000Z
+LOCATION:线上（腾讯会议，房间号会前一天短信通知）
+END:VEVENT
+BEGIN:VEVENT
+UID:seed-standup-002@proactive
+SUMMARY:项目双周站会
+DESCRIPTION:同步 P2 观测层进度；议题：连接器接口评审、审计日志格式。
+DTSTART:20261020T093000Z
+LOCATION:线上
+END:VEVENT
+BEGIN:VEVENT
+UID:seed-dentist-003@proactive
+SUMMARY:牙科复查
+DESCRIPTION:半年度洗牙 + 补牙材料检查。
+DTSTART:20261105T023000Z
+LOCATION:苏州吴中·某口腔门诊
+END:VEVENT
+BEGIN:VTODO
+UID:seed-todo-101@proactive
+SUMMARY:提交军队文职报名确认
+DESCRIPTION:截止日前完成学历认证材料上传。
+DUE:20261022T160000Z
+END:VTODO
+BEGIN:VTODO
+UID:seed-todo-102@proactive
+SUMMARY:整理 GitHub 项目 README 终稿
+DESCRIPTION:P1 已完成推送；P2 设计文档待补。
+DUE:20261025T160000Z
+END:VTODO
+END:VCALENDAR

@@ -18,14 +18,16 @@
 - **市面调研**：`docs/RESEARCH-2026-landscape.md`——2026 主动式 AI 助理全景（STEPX Neo、豆包手机、小艺/Bixby/小布Next/Siri AI、ChatGPT Dreaming V3、第三方记忆层），按论文 P1–P5 判据体检，确认生态位与差异化
 - 验证清单：tex 环境配对平衡、bibitem 15 条、README 链接可达、目录结构完整
 
-## P2 观测层 ⬜（预估 3–5 天）
+## P2 观测层 ✅（2026-10-17 完成）
 
-- `collectors/`：ICS 日历/待办连接器、Markdown 笔记文件夹连接器、RSS 连接器；统一 Collector 接口 + 授权声明
-- 事件化抽取管道：本地规则模式（默认，不调 LLM）+ LLM 模式（可选）
-- `memory/`：SQLite 事件库（含 provenance 字段）、ChromaDB 向量库、审计日志表
+- `collectors/`：ICS 日历/待办连接器、Markdown 笔记文件夹连接器、RSS 连接器；统一 Collector 接口 + ConsentSpec 授权声明
+- 事件化抽取管道：本地规则模式（默认，不调 LLM）+ MockLLM 模式（显式可选，输出带 mock 标记）
+- `memory/`：SQLite 事件库（provenance + chain_depth + 确定性 event_id 幂等）、审计日志表、consent ledger；ChromaDB 可选（缺失自动降级）
 - 基础设施：集中配置（env 校验、快速失败）、类型化错误 + 全局中间件、结构化 JSON 日志 + 请求 ID、`/health` `/ready`、优雅停机、CORS 显式来源
-- 种子数据 fixtures + 单测；MockLLM 可无密钥跑通
-- 验证：种子数据回放、`/health` 冒烟、CI 绿（此阶段引入 GitHub Actions：ruff + pytest）
+- REST + SSE：`/api/v1/events`、`/api/v1/stream`（实时推送）、`/api/v1/audit`、`/api/v1/consents`（可撤回）、`/api/v1/collectors/run`（手动触发轻周期）
+- 种子数据 fixtures + 20 个测试 + GitHub Actions CI（ruff + pytest）
+- 验证清单（全部实测通过）：ruff 全绿；20/20 测试；种子回放幂等（第二次 inserted 全 0）；SSE 端到端实时推送 16 帧；ICS 时间解包；重要度规则（7 天内 +0.4）；授权撤回后连接器跳过；错误结构规范化
+- 详见 `docs/devlog/2026-10-17-p2-observation-layer.md` 与 `docs/adr/0006-p2-observation-decisions.md`
 
 ## P3 自省层 + 目标层 ⬜（预估 5–7 天）
 

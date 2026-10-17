@@ -2,7 +2,7 @@
 
 > 一个**诚实定位**的个人开源项目：以理论论文《主动式AGI的理论框架与落地约束》为依据，构建 FL-PCL 五层持续认知闭环的**受限常驻实例（restricted-persistence instance）**，并把它当作**实证仪器**——测量"模拟的主动性"在个人尺度上的真实表现。
 
-**当前状态：P1 已完成（工程骨架 + 论文资产化 + 市面调研）。代码自 P2 起提交。**
+**当前状态：P1 + P2 已完成（论文资产化 + 市面调研 + 观测层可运行）。代码自 P2 起提交，20 个测试全绿。**
 
 ---
 
@@ -89,7 +89,7 @@ flowchart LR
 |---|---|---|
 | P0 | 定位冻结：技术选型、数据边界、对外表述 | ✅ 已完成 |
 | P1 | 工程骨架 + 论文资产化 + 市面调研（仓库结构、README、LaTeX、ADRs、2026 竞品体检） | ✅ 已完成 |
-| P2 | 观测层：本地授权连接器、事件抽取管道、SQLite+ChromaDB、审计日志 | ⬜ 待开工 |
+| P2 | 观测层：本地授权连接器、事件抽取管道、SQLite 事件库、审计日志、REST+SSE API | ✅ 已完成（20 测试全绿、幂等回放验证） |
 | P3 | 自省层 + 目标层：周期自省、模板化目标合成、`charter.yaml` 锚定文件 | ⬜ |
 | P4 | 对齐层 + 提醒引擎：风险三级门控、沉默-询问-协助-行动四态、批量审计 | ⬜ |
 | P5 | 仪表盘：认知环可视化、charter 编辑器、成本面板 | ⬜ |
@@ -116,18 +116,36 @@ proactive-ai-assistant/
 │   ├── charter.example.yaml   # C_human 偏好锚定文件示例
 │   ├── adr/                   # 架构决策记录
 │   └── devlog/                # 开发日志（全程记录）
-├── assistant/                 # 主程序（P2 起）
+├── assistant/                 # 主程序（P2 观测层已可运行）
+│   ├── assistant/             # 主包：collectors / extraction / memory / events / services / api
+│   ├── migrations/            # SQLite 迁移（含回滚段）
+│   ├── fixtures/              # 种子数据（ics + 笔记 + rss，零配置可跑）
+│   ├── scripts/seed.py        # 种子生成 + 幂等回放
+│   └── tests/                 # 20 个测试
 ├── experiments/               # OQ5/OQ7 实验脚本（P6 起）
 └── data/                      # 本地运行时数据（gitignored）
 ```
 
-## 快速开始
+## 快速开始（观测层）
 
-代码尚未提交（P2 开工）。论文即可阅读：
+```bash
+cd assistant
+pip install -r requirements.txt          # 或 pip install -e ".[dev]"
 
-- 在线渲染：直接打开 [`paper/proactive-agi-theory.md`](paper/proactive-agi-theory.md)
-- 编译 PDF：将 `paper/proactive-agi-theory.tex` 导入 [Overleaf](https://www.overleaf.com)（编译器选 XeLaTeX），或本地 `xelatex proactive-agi-theory.tex`（需 TeX Live + ctex 宏包）
-- 修改论文后重新生成 tex：`python3 paper/md2tex.py paper/proactive-agi-theory.md -o paper/proactive-agi-theory.tex`
+# 方式一：种子回放（零配置，演示数据）
+python -m scripts.seed --reset           # 第一次：16 事件入库
+python -m scripts.seed                  # 第二次：inserted 全 0（幂等验证）
+
+# 方式二：起服务（同样零配置，自动挂载 fixtures 演示连接器）
+uvicorn assistant.api.app:create_app --factory --host 127.0.0.1 --port 8787
+# 打开 http://127.0.0.1:8787/docs 交互式 API 文档
+# curl -X POST http://127.0.0.1:8787/api/v1/collectors/run   # 手动触发一次轻观测周期
+# curl -N http://127.0.0.1:8787/api/v1/stream                # SSE 实时事件流
+```
+
+接入自己的数据：复制 `.env.example` 为 `.env`，设置 `COLLECTOR_ICS_PATHS` / `COLLECTOR_NOTES_PATHS` / `COLLECTOR_RSS_URLS` 后重启。
+
+论文阅读：直接打开 [`paper/proactive-agi-theory.md`](paper/proactive-agi-theory.md)；或将其 `.tex` 导入 [Overleaf](https://www.overleaf.com)（XeLaTeX）编译 PDF。
 
 ## 设计决策速览
 
@@ -136,7 +154,8 @@ proactive-ai-assistant/
 1. **诚实定位**（[ADR-0003](docs/adr/0003-honest-positioning.md)）：B 级模块标注"模拟主动性"，用论文 5.2 判别准则自我检验；
 2. **授权持续感知**（[ADR-0004](docs/adr/0004-authorized-sensing.md)）：consent ledger 授权账本 + 全量审计日志 + 本地优先，数据不出本机；
 3. **常驻成本控制**（[ADR-0005](docs/adr/0005-resident-cost-control.md)）：低频深周期（1–2 次/天）+ 高频轻观测（本地规则，不调 LLM）+ MockLLM 无密钥可复现；
-4. **技术栈**（[ADR-0002](docs/adr/0002-tech-stack.md)）：FastAPI + SQLite/ChromaDB + React/TS + SSE，本地单用户。
+4. **技术栈**（[ADR-0002](docs/adr/0002-tech-stack.md)）：FastAPI + SQLite/ChromaDB + React/TS + SSE，本地单用户；
+5. **观测层工程决策**（[ADR-0006](docs/adr/0006-p2-observation-decisions.md)）：确定性 event_id 幂等、线程局部连接、fixtures 自动挂载、rules 抽取器默认。
 
 ## License
 

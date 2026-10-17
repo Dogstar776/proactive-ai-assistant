@@ -26,3 +26,4 @@
 | [0003](0003-honest-positioning.md) | 诚实定位：受限常驻实例 + 实证仪器 | 已接受 |
 | [0004](0004-authorized-sensing.md) | 授权持续感知与数据主权 | 已接受 |
 | [0005](0005-resident-cost-control.md) | 常驻成本控制策略 | 已接受 |
+| [0006](0006-p2-observation-decisions.md) | P2 观测层的四项工程决策 | 已接受 |
