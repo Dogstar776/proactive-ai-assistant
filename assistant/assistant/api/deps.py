@@ -1,7 +1,7 @@
 """依赖注入：把 Settings / DB 连接 / 服务实例装配给路由层。
 
-连接策略：每个请求一个短连接（SQLite WAL 下足够且避免长连接占写锁）；
-仓储与服务在应用启动时装配一次，挂在 app.state。
+连接策略：ThreadLocalConnection（每个工作线程一个 SQLite 连接，
+WAL 模式下读写不互阻——见 ADR-0006）。服务在首次使用时装配并缓存。
 """
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from pathlib import Path
 from assistant.config import Settings, get_settings
 from assistant.db import ThreadLocalConnection
 from assistant.logging_setup import get_logger
+from assistant.services.deep_cycle import DeepCycleService
 from assistant.services.observation_service import ObservationService
 
 logger = get_logger("api.deps")
@@ -30,22 +31,30 @@ def shutdown_services() -> None:
         _conn_holder.close_all()
         _conn_holder = None
     _service.cache_clear()
+    _deep_cycle.cache_clear()
+
+
+def _connection() -> ThreadLocalConnection:
+    global _conn_holder
+    settings = get_settings()
+    from assistant.db import migrate
+
+    migrate(settings.db_path)
+    if _conn_holder is None:
+        _conn_holder = ThreadLocalConnection(settings.db_path)
+    return _conn_holder
 
 
 @lru_cache
 def _service() -> ObservationService:
-    global _conn_holder
-    settings = get_settings()
     from assistant.collectors import KINDS, CollectorRunner
     from assistant.collectors.base import CollectorConfig
-    from assistant.db import ThreadLocalConnection, migrate
     from assistant.events.bus import get_bus
     from assistant.extraction import RulesExtractor
     from assistant.memory.repository import AuditRepository, ConsentRepository, EventRepository
 
-    migrate(settings.db_path)
-    conn = ThreadLocalConnection(settings.db_path)
-    _conn_holder = conn
+    settings = get_settings()
+    conn = _connection()
 
     # 高频轻观测层默认用本地规则（ADR-0005：不调 LLM）；
     # MockLlmExtractor 保留给显式切换到 mock_llm 的场景。
@@ -112,8 +121,29 @@ def _service() -> ObservationService:
     )
 
 
+@lru_cache
+def _deep_cycle() -> DeepCycleService:
+    from assistant.charter import load_charter
+    from assistant.events.bus import get_bus
+    from assistant.goals.repository import GoalRepository
+    from assistant.goals.service import GoalService
+    from assistant.introspection.service import IntrospectionService
+    from assistant.memory.repository import EventRepository
+
+    conn = _connection()
+    charter = load_charter()  # data/charter.yaml → docs/charter.example.yaml
+    logger.info("charter.loaded source=%s domains=%d", charter.source_path, len(charter.domains))
+    introspection = IntrospectionService(events=EventRepository(conn), conn=conn, bus=get_bus())
+    goals = GoalService(repo=GoalRepository(conn), charter=charter, bus=get_bus())
+    return DeepCycleService(introspection=introspection, goals=goals, bus=get_bus())
+
+
 def get_observation_service() -> ObservationService:
     return _service()
+
+
+def get_deep_cycle_service() -> DeepCycleService:
+    return _deep_cycle()
 
 
 def fresh_connection() -> sqlite3.Connection:

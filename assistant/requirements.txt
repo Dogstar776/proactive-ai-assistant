@@ -8,6 +8,7 @@ httpx>=0.27
 feedparser>=6.0
 icalendar>=6.0
 python-dateutil>=2.9
+pyyaml>=6.0
 
 # 可选：向量检索层。缺失时系统自动降级为 NullVectorStore（见 assistant/memory/vector.py）
 # chromadb>=1.0

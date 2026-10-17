@@ -29,12 +29,15 @@
 - 验证清单（全部实测通过）：ruff 全绿；20/20 测试；种子回放幂等（第二次 inserted 全 0）；SSE 端到端实时推送 16 帧；ICS 时间解包；重要度规则（7 天内 +0.4）；授权撤回后连接器跳过；错误结构规范化
 - 详见 `docs/devlog/2026-10-17-p2-observation-layer.md` 与 `docs/adr/0006-p2-observation-decisions.md`
 
-## P3 自省层 + 目标层 ⬜（预估 5–7 天）
+## P3 自省层 + 目标层 ✅（2026-10-17 完成）
 
-- `introspection/`：周期性缺口检测（检索失败簇、矛盾检测）、自省报告生成（`[B-simulated]` 标注）
-- `goals/`：模板化目标合成（显式 `template-based` 标记 + 模板 ID）、统一优先级队列（启发式 Ĝ 近似：信息增益项 + charter 实用价值项）、目标生命周期（挂起/合并/撤销）
-- `charter/`：加载/校验/版本比对；首次运行引导用户撰写自己的 charter
-- 验证：mock 模式端到端跑通"观测→自省→目标入队→门控→（模拟）执行→回写"
+- `introspection/`：三个缺口检测器（deadline-prep / theme-cluster / contradiction-scan）+ 一致性审计（OQ4 近似指标：自生内容占比/重复率/过期项/链深）+ 自省报告（`[B-simulated]` 标注）
+- `goals/`：三个目标合成模板（全部 R1 只读型，`template-based` 显式标注）+ 目标队列（确定性 ID 幂等 + ON CONFLICT 刷新）+ 启发式 Ĝ 近似排序（0.6·info_gain + 0.4·practical_value，权重显式常量）
+- `charter.py`：C_human 工程化（data/charter.yaml → docs/charter.example.yaml 回退），域权重匹配
+- `services/deep_cycle.py` + `scripts/run_deep_cycle.py`：深周期编排与 CLI（ADR-0005 低频深周期，P6 起接入定时）
+- API：`/api/v1/introspection/run|reports`、`/api/v1/goals`、`/api/v1/goals/{id}/status`
+- 验证清单（全部实测通过）：ruff 全绿；30/30 测试；深周期端到端 16 事件→6 缺口→6 目标；第二轮 new_goals=0（幂等）；队列按优先级降序；charter 锚定生效（面试文本匹配 career 域拉高优先级）；suspend 后移出 active；非法 status 400
+- 详见 `docs/devlog/2026-10-17-p3-introspection-goals.md` 与 `docs/adr/0007-p3-introspection-goals-decisions.md`
 
 ## P4 对齐层 + 提醒引擎 ⬜（预估 3–5 天）
 

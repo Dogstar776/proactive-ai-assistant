@@ -12,7 +12,15 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from assistant.api.routes import audit, collectors, events, health, stream
+from assistant.api.routes import (
+    audit,
+    collectors,
+    events,
+    goals,
+    health,
+    introspection,
+    stream,
+)
 from assistant.config import Settings, get_settings
 from assistant.errors import AppError
 from assistant.logging_setup import (
@@ -89,4 +97,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(stream.router)
     app.include_router(audit.router)
     app.include_router(collectors.router)
+    app.include_router(introspection.router)
+    app.include_router(goals.router)
     return app

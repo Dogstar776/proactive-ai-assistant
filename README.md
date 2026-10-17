@@ -2,7 +2,7 @@
 
 > 一个**诚实定位**的个人开源项目：以理论论文《主动式AGI的理论框架与落地约束》为依据，构建 FL-PCL 五层持续认知闭环的**受限常驻实例（restricted-persistence instance）**，并把它当作**实证仪器**——测量"模拟的主动性"在个人尺度上的真实表现。
 
-**当前状态：P1 + P2 已完成（论文资产化 + 市面调研 + 观测层可运行）。代码自 P2 起提交，20 个测试全绿。**
+**当前状态：P1–P3 已完成（论文资产化 + 市面调研 + 观测层 + 自省/目标层）。30 个测试全绿。**
 
 ---
 
@@ -90,7 +90,7 @@ flowchart LR
 | P0 | 定位冻结：技术选型、数据边界、对外表述 | ✅ 已完成 |
 | P1 | 工程骨架 + 论文资产化 + 市面调研（仓库结构、README、LaTeX、ADRs、2026 竞品体检） | ✅ 已完成 |
 | P2 | 观测层：本地授权连接器、事件抽取管道、SQLite 事件库、审计日志、REST+SSE API | ✅ 已完成（20 测试全绿、幂等回放验证） |
-| P3 | 自省层 + 目标层：周期自省、模板化目标合成、`charter.yaml` 锚定文件 | ⬜ |
+| P3 | 自省层 + 目标层：周期自省、模板化目标合成、`charter.yaml` 锚定文件 | ✅ 已完成（30 测试全绿、目标队列幂等） |
 | P4 | 对齐层 + 提醒引擎：风险三级门控、沉默-询问-协助-行动四态、批量审计 | ⬜ |
 | P5 | 仪表盘：认知环可视化、charter 编辑器、成本面板 | ⬜ |
 | P6 | 实验与度量：OQ7 模板移除测试、OQ5 周期率剂量效应、记忆健康指标（14 天个人运行） | ⬜ |
@@ -117,7 +117,15 @@ proactive-ai-assistant/
 │   ├── adr/                   # 架构决策记录
 │   └── devlog/                # 开发日志（全程记录）
 ├── assistant/                 # 主程序（P2 观测层已可运行）
-│   ├── assistant/             # 主包：collectors / extraction / memory / events / services / api
+│   ├── assistant/             # 主包
+│   │   ├── collectors/        # 三个本地授权连接器 + runner
+│   │   ├── extraction/        # rules（默认）/ mock_llm 抽取器
+│   │   ├── memory/            # SQLite 仓储 + 向量存储抽象
+│   │   ├── events/            # 事件总线（SSE 消费）
+│   │   ├── introspection/     # （P3）缺口检测 + 自省报告 [B-simulated]
+│   │   ├── goals/             # （P3）模板化目标合成 + 优先级队列
+│   │   ├── charter.py         # （P3）C_human 偏好锚定加载
+│   │   └── api/               # FastAPI：REST + SSE + 健康检查
 │   ├── migrations/            # SQLite 迁移（含回滚段）
 │   ├── fixtures/              # 种子数据（ics + 笔记 + rss，零配置可跑）
 │   ├── scripts/seed.py        # 种子生成 + 幂等回放
@@ -141,6 +149,11 @@ uvicorn assistant.api.app:create_app --factory --host 127.0.0.1 --port 8787
 # 打开 http://127.0.0.1:8787/docs 交互式 API 文档
 # curl -X POST http://127.0.0.1:8787/api/v1/collectors/run   # 手动触发一次轻观测周期
 # curl -N http://127.0.0.1:8787/api/v1/stream                # SSE 实时事件流
+
+# 方式三：跑一次深周期（自省 → 目标合成，论文 3.2→3.3）
+python -m scripts.run_deep_cycle
+# curl -X POST http://127.0.0.1:8787/api/v1/introspection/run  # API 触发深周期
+# curl http://127.0.0.1:8787/api/v1/goals                      # 查看目标队列
 ```
 
 接入自己的数据：复制 `.env.example` 为 `.env`，设置 `COLLECTOR_ICS_PATHS` / `COLLECTOR_NOTES_PATHS` / `COLLECTOR_RSS_URLS` 后重启。
