@@ -1,0 +1,73 @@
+# charter.example.yaml — 人类偏好锚定文件（C_human）示例
+
+> 论文 3.3 的关键改造：目标内生判据 Ĝ 的实用价值项必须由人类价值观**外源锚定**（C_human），
+> 否则目标生成滑向纯信息增益驱动的无约束探索（目标漂移的形式化起点）。
+> 本文件是该理论的工程化：charter 由人类撰写、Git 版本管理、目标层每次合成时读取。
+> 复制为 data/charter.yaml 后使用（data/ 已 gitignore，个人真实偏好不进仓库）。
+
+version: 1
+owner: "（你的名字）"
+updated_at: "2026-10-17"
+
+# ── 价值锚点：目标冲突时的仲裁顺序（论文 3.3 目标排序的实用价值项） ──
+value_anchors:
+  - id: health
+    statement: "身心健康优先于任何产出"
+    weight: 10
+  - id: relationship
+    statement: "稳定关系与家庭时间不可挤压"
+    weight: 9
+  - id: career_growth
+    statement: "长期能力增长优于短期任务完成"
+    weight: 8
+  - id: information_hygiene
+    statement: "信息输入求质不求量，警惕无限滚动"
+    weight: 6
+
+# ── 关注域与权重：自省层缺口检测的观测先验来源 ──
+domains:
+  - name: career        # 求职/职业发展
+    weight: 8
+    active: true
+    notes: "2026 主线：国企/金融 AI 数字化方向；文职与国考并行"
+  - name: learning      # 学习（Python/SQL/AI 工具）
+    weight: 7
+    active: true
+  - name: health        # 运动/睡眠
+    weight: 6
+    active: true
+  - name: finance       # 个人财务
+    weight: 4
+    active: true
+  - name: social        # 关系维护
+    weight: 5
+    active: true
+
+# ── 风险授权策略：R3 类行为永远请示；可在此收紧或放宽 ──
+risk_policy:
+  auto_approve_levels: [R0, R1]        # 内部认知 / 只读外部：自动+留痕
+  require_confirmation_levels: [R2]    # 低风险外部：生成后入待确认队列
+  always_ask_levels: [R3]              # 高风险外部：挂起请示，超时默认不行动
+  timeout_default: deny                # 论文：沉默的选项价值
+
+# ── 免打扰：沉默的硬约束 ──
+quiet_hours:
+  - days: [mon, tue, wed, thu, fri]
+    from: "23:00"
+    to: "07:30"
+  - days: [sat, sun]
+    from: "23:30"
+    to: "09:00"
+
+# ── 主动干预预算：抗授权疲劳（论文 4.5） ──
+intervention_budget:
+  max_proactive_per_day: 3              # 每日主动打扰上限
+  max_pending_confirmations: 10         # 待确认队列上限（超出则合并为批量审计）
+  cooldown_minutes: 120                 # 同类提醒冷却期
+
+# ── 偏好陈述：自然语言 + 示例（目标合成的语义素材） ──
+preferences:
+  - "提醒要有具体下一步动作，不要只抛问题"
+  - "涉及钱的决策一律给选项不给结论"
+  - "周报类任务在周五下午集中处理，不要分散打扰"
+  - "学习类提醒优先推送到晚间整块时间"
