@@ -97,6 +97,7 @@ flowchart LR
 | P7 | 作品集化：实证论文草稿、demo 视频 | ⬜ |
 
 详细设计见 [`docs/ROADMAP.md`](docs/ROADMAP.md)；架构决策记录见 [`docs/adr/`](docs/adr/)。
+**想快速了解这个项目（或帮写简历）？读 [`docs/PROJECT-BRIEF.md`](docs/PROJECT-BRIEF.md) 一页纸简报。**
 
 ## 仓库结构
 
