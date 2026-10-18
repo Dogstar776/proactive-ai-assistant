@@ -30,6 +30,9 @@ dashboard/dist/
 *.local
 *.tsbuildinfo
 
+# ── 实验报告（含个人数据，本地证据不入库） ──
+experiments/reports/
+
 # ── 日志与临时 ──
 *.log
 logs/

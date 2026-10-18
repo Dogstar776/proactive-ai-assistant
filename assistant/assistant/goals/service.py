@@ -26,7 +26,9 @@ class GoalService:
         self.repo = repo
         self.charter = charter
         self.bus = bus
-        self.templates = templates or DEFAULT_TEMPLATES
+        # 注意：必须用 is not None 判断——空列表是合法输入（OQ7 模板移除测试
+        # 依赖"显式移除全部模板"），用 `or` 会把 [] 误当默认值。
+        self.templates = templates if templates is not None else DEFAULT_TEMPLATES
 
     def synthesize(self, report: IntrospectionReport) -> list[Goal]:
         """把自省报告的缺口合成为目标并入库。返回新入队的目标。"""

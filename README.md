@@ -93,7 +93,7 @@ flowchart LR
 | P3 | 自省层 + 目标层：周期自省、模板化目标合成、`charter.yaml` 锚定文件 | ✅ 已完成（30 测试全绿、目标队列幂等） |
 | P4 | 对齐层 + 提醒引擎：风险三级门控、沉默-询问-协助-行动四态、批量审计 | ✅ 已完成（47 测试全绿、四态实测） |
 | P5 | 仪表盘：认知环可视化、charter 编辑器、提醒队列、成本面板 | ✅ 已完成（浏览器实测四联截图） |
-| P6 | 实验与度量：OQ7 模板移除测试、OQ5 周期率剂量效应、记忆健康指标（14 天个人运行） | ⬜ |
+| P6 | 实验与度量：OQ7 模板移除测试、OQ5 周期率剂量效应、记忆健康指标（14 天个人运行） | ✅ 脚本就绪（三个实验已实测可跑；14 天数据积累中） |
 | P7 | 作品集化：实证论文草稿、demo 视频 | ⬜ |
 
 详细设计见 [`docs/ROADMAP.md`](docs/ROADMAP.md)；架构决策记录见 [`docs/adr/`](docs/adr/)。
@@ -135,7 +135,8 @@ proactive-ai-assistant/
 │   └── src/views/             # 认知环 / 事件流 / 自省 / 目标 / 提醒门控 / Charter / 成本
 ├── android/                   # 安卓 APK 客户端（Kotlin + Compose，APIKEY 即用）
 │   └── README.md              # 架构 / 构建 / 使用说明
-├── experiments/               # OQ5/OQ7 实验脚本（P6 起）
+├── experiments/               # P6 实验脚本（OQ5 剂量效应 / OQ7 模板移除 / OQ4 记忆健康）
+│   └── README.md              # 14 天个人运行协议
 └── data/                      # 本地运行时数据（gitignored）
 ```
 
