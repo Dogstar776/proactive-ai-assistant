@@ -2,7 +2,7 @@
 
 > 一个**诚实定位**的个人开源项目：以理论论文《主动式AGI的理论框架与落地约束》为依据，构建 FL-PCL 五层持续认知闭环的**受限常驻实例（restricted-persistence instance）**，并把它当作**实证仪器**——测量"模拟的主动性"在个人尺度上的真实表现。
 
-**当前状态：P1–P5 已完成（论文 + 调研 + 观测 + 自省/目标 + 对齐门控 + Liquid Glass 仪表盘）。52 个测试全绿。**
+**当前状态：P1–P5 已完成 + 安卓 APK 客户端（论文 + 调研 + 观测 + 自省/目标 + 对齐门控 + Liquid Glass 仪表盘 + Kotlin/Compose 手机端）。54 个后端测试全绿。**
 
 ---
 
@@ -126,13 +126,15 @@ proactive-ai-assistant/
 │   │   ├── goals/             # 模板化目标合成 + 优先级队列
 │   │   ├── gateway/           # 四态门控 + 提醒引擎
 │   │   ├── charter.py         # C_human 偏好锚定加载
-│   │   └── api/               # FastAPI：REST + SSE + 健康检查
+│   │   └── api/               # FastAPI：REST + SSE + 健康检查（+API Key 鉴权）
 │   ├── migrations/            # SQLite 迁移（含回滚段）
 │   ├── fixtures/              # 种子数据（ics + 笔记 + rss，零配置可跑）
 │   ├── scripts/               # seed / deep_cycle / reminder_cycle CLI
-│   └── tests/                 # 52 个测试
+│   └── tests/                 # 54 个测试
 ├── dashboard/                 # 仪表盘（P5：Vite + React + TS，Liquid Glass）
 │   └── src/views/             # 认知环 / 事件流 / 自省 / 目标 / 提醒门控 / Charter / 成本
+├── android/                   # 安卓 APK 客户端（Kotlin + Compose，APIKEY 即用）
+│   └── README.md              # 架构 / 构建 / 使用说明
 ├── experiments/               # OQ5/OQ7 实验脚本（P6 起）
 └── data/                      # 本地运行时数据（gitignored）
 ```
@@ -166,6 +168,13 @@ python -m scripts.run_reminder_cycle
 
 # 方式五：仪表盘（P5，Liquid Glass）
 cd ../dashboard && npm install && npm run dev      # http://localhost:5173
+
+# 方式六：安卓 APK（Kotlin + Compose，APIKEY 即用）
+# 电脑端：.env 设 API_KEY=你的密钥，然后
+uvicorn assistant.api.app:create_app --factory --host 0.0.0.0 --port 8787
+# 手机端：GitHub Actions 自动构建 APK（仓库 Actions → android workflow → Artifacts），
+# 或本地 gradle assembleDebug；安装后填后端地址（电脑局域网 IP）+ API Key。
+# 详见 android/README.md
 ```
 
 接入自己的数据：复制 `.env.example` 为 `.env`，设置 `COLLECTOR_ICS_PATHS` / `COLLECTOR_NOTES_PATHS` / `COLLECTOR_RSS_URLS` 后重启。

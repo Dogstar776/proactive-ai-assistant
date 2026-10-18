@@ -59,6 +59,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="proactive-ai-assistant", version="0.2.0", lifespan=lifespan)
 
     app.state.settings = settings
+    # API Key 鉴权（配置了才激活；/health 保持开放供连通性测试）
+    from assistant.api.auth import maybe_install
+
+    maybe_install(app, settings.api_key.get_secret_value() if settings.api_key else None)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,  # 显式来源，禁通配符

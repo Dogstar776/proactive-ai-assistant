@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     data_dir: Path = Path("./data")
 
+    # ── 远程访问（安卓 APK 接管用） ──
+    # 留空 = 本地单用户模式，不鉴权（ADR-0002）；
+    # 设置后 /api/v1/* 要求 X-API-Key 头，/health 保持开放（供连通性测试）。
+    api_key: SecretStr | None = None
+
     # ── LLM Provider（ADR-0005：默认 mock，无密钥完整复现） ──
     llm_provider: Provider = "mock"
     llm_base_url: str = "https://api.deepseek.com/v1"

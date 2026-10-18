@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 通知小图标：与 Web 仪表盘同形的渐变环（纯矢量，无二进制资源） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <path
+        android:fillColor="#0A84FF"
+        android:pathData="M16,4a12,12 0 1,1 -0.01,0zM16,10a6,6 0 1,0 0.01,0z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,11a5,5 0 1,1 -0.01,0zM16,13.5a2.5,2.5 0 1,0 0.01,0z" />
+</vector>
