@@ -28,6 +28,7 @@ node_modules/
 dashboard/dist/
 .vite/
 *.local
+*.tsbuildinfo
 
 # ── 日志与临时 ──
 *.log
