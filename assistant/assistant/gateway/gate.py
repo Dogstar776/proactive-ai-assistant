@@ -65,8 +65,12 @@ class Gateway:
 
     # ── 免打扰（论文：沉默的硬约束） ──
     def _in_quiet_hours(self, now: datetime) -> str | None:
-        weekday = now.strftime("%a").lower()[:3]  # mon/tue/...
-        hhmm = now.strftime("%H:%M")
+        # charter 的时间字面量是用户的本地时间；传入的 now 通常是 UTC（ aware ）
+        # 必须转换到本地时区再比较，否则会出现"本地中午被判免打扰"的错位
+        # （2026-10-17 冒烟实测发现并修复）。
+        local = now.astimezone()
+        weekday = local.strftime("%a").lower()[:3]  # mon/tue/...
+        hhmm = local.strftime("%H:%M")
         for slot in self.charter.quiet_hours:
             days = [str(d).lower()[:3] for d in slot.get("days", [])]
             if weekday not in days:

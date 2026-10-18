@@ -72,6 +72,7 @@ class ObservationService:
             "kind": ev.kind,
             "title": ev.title,
             "summary": ev.summary,
+            "content": ev.content,
             "event_time": ev.event_time,
             "observed_at": ev.observed_at,
             "importance": ev.importance,

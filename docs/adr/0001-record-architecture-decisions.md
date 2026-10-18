@@ -29,3 +29,4 @@
 | [0006](0006-p2-observation-decisions.md) | P2 观测层的四项工程决策 | 已接受 |
 | [0007](0007-p3-introspection-goals-decisions.md) | P3 自省层与目标层的工程决策 | 已接受 |
 | [0008](0008-p4-alignment-decisions.md) | P4 对齐层与提醒引擎的工程决策 | 已接受 |
+| [0009](0009-p5-dashboard-decisions.md) | P5 仪表盘的工程决策 | 已接受 |

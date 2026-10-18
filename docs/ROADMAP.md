@@ -48,11 +48,15 @@
 - 当日修复：模板免责声明触发高风险词导致只读目标误判 R3（措辞规避 + 回归测试 + 局限记录，见 ADR-0008）
 - 详见 `docs/devlog/2026-10-17-p4-alignment-reminders.md` 与 `docs/adr/0008-p4-alignment-decisions.md`
 
-## P5 仪表盘 ⬜（预估 5–7 天）
+## P5 仪表盘 ✅（2026-10-17 完成）
 
-- React+TS：认知环可视化（观测流、自省报告、目标队列、门控决策）、目标谱系图、charter 编辑器、consent ledger 与审计日志视图、成本面板
-- 设计基调：浅色、高级简约、单一强调色（维护者审美偏好）
-- 验证：双标签 SSE 同步、错误态/加载态齐全、无硬编码 URL
+- `dashboard/`：Vite + React + TS，7 视图（认知环/事件流/自省/目标/提醒门控/Charter/成本），与 API 1:1 不阉割
+- Liquid Glass 设计系统：浅色 mesh 背景、层叠半透明白玻璃卡、顶部高光带、同心圆角、悬浮胶囊导航、Space Grotesk 数字、Apple 弹簧动效
+- 认知环 SVG：FL-PCL 五层 + 流动光点 + SSE 实时脉冲；**沉默可见**（suppressed 条目与原因同级展示）
+- 后端新增：`GET/POST /api/v1/charter`（校验 + 热重载）、`GET /api/v1/system/status`
+- 验证清单（全部实测通过）：tsc 零错误；vite 构建 248KB；52/52 测试；ruff 全绿；vite→后端代理全链路；bsk 浏览器四页截图（docs/devlog/screenshots/p5-*.png）
+- 当日修复：UTC/本地时区错位（本地中午误判免打扰）；charter 保存相对路径；事件流 content 字段缺失白屏（+ErrorBoundary）
+- 详见 `docs/devlog/2026-10-17-p5-dashboard.md` 与 `docs/adr/0009-p5-dashboard-decisions.md`
 
 ## P6 实验与度量 ⬜（持续，14 天个人运行）
 

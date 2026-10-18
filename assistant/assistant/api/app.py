@@ -21,6 +21,7 @@ from assistant.api.routes import (
     health,
     introspection,
     stream,
+    system,
 )
 from assistant.config import Settings, get_settings
 from assistant.errors import AppError
@@ -101,4 +102,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(introspection.router)
     app.include_router(goals.router)
     app.include_router(gateway.router)
+    app.include_router(system.router)
     return app

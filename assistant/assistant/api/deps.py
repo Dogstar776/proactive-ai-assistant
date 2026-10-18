@@ -33,6 +33,15 @@ def shutdown_services() -> None:
         _conn_holder = None
     _service.cache_clear()
     _deep_cycle.cache_clear()
+    _reminder_service.cache_clear()
+
+
+def reload_services() -> None:
+    """热重载：charter 等配置变更后清空服务缓存（连接保持，不重启进程）。"""
+    _service.cache_clear()
+    _deep_cycle.cache_clear()
+    _reminder_service.cache_clear()
+    logger.info("services.reloaded")
 
 
 def _connection() -> ThreadLocalConnection:
@@ -134,7 +143,7 @@ def _deep_cycle() -> DeepCycleService:
     from assistant.memory.repository import AuditRepository, EventRepository
 
     conn = _connection()
-    charter = load_charter()  # data/charter.yaml → docs/charter.example.yaml
+    charter = load_charter(get_settings().data_dir / "charter.yaml")
     logger.info("charter.loaded source=%s domains=%d", charter.source_path, len(charter.domains))
     introspection = IntrospectionService(events=EventRepository(conn), conn=conn, bus=get_bus())
     goals = GoalService(repo=GoalRepository(conn), charter=charter, bus=get_bus())

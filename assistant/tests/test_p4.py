@@ -79,14 +79,26 @@ def test_gate_act_for_r1_outside_quiet_hours():
 
 def test_gate_silence_in_quiet_hours():
     gw = Gateway(charter=_charter(), audit=_NullAudit())
-    # 周六 23:30 在示例 charter 的免打扰段内
-    late = datetime(2026, 10, 17, 23, 30, tzinfo=UTC)
+    # charter 时间是本地时间字面量；构造本地 23:30（周六在示例 charter 免打扰段内）
+    late = datetime(2026, 10, 17, 23, 30).astimezone()
     d = gw.evaluate(
         Intervention(kind="deadline_nudge", title="t", body="b", cooldown_key="k"),
         now=late, daily_count_today=0, last_fired={},
     )
     assert d.state == STATE_SILENCE
     assert "quiet_hours" in d.reason
+
+
+def test_gate_not_quiet_at_local_noon():
+    """回归：本地中午不得判免打扰（UTC/本地时区错位 bug，2026-10-17 修复）。"""
+    gw = Gateway(charter=_charter(), audit=_NullAudit())
+    noon = datetime(2026, 10, 18, 12, 0).astimezone()  # 周日中午（本地）
+    d = gw.evaluate(
+        Intervention(kind="deadline_nudge", title="t", body="b", cooldown_key="k",
+                     text="整理面试准备清单"),
+        now=noon, daily_count_today=0, last_fired={},
+    )
+    assert d.state == STATE_ACT
 
 
 def test_gate_silence_on_cooldown():

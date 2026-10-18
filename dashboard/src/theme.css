@@ -1,0 +1,617 @@
+/* ============================================================
+   主动式 AI 助理 · Liquid Glass 设计系统（iOS 26 风格）
+   浅色 / 层叠半透明 / 高光边缘 / 同心圆角 / 弹簧动效
+   ============================================================ */
+
+:root {
+  /* ── 色彩 ── */
+  --bg-base: #f5f6fa;
+  --accent: #0a84ff;
+  --accent-deep: #0066cc;
+  --accent-soft: rgba(10, 132, 255, 0.12);
+  --ok: #30d158;
+  --ok-soft: rgba(48, 209, 88, 0.14);
+  --warn: #ff9f0a;
+  --warn-soft: rgba(255, 159, 10, 0.14);
+  --danger: #ff453a;
+  --danger-soft: rgba(255, 69, 58, 0.12);
+  --neutral: #8e8e93;
+  --neutral-soft: rgba(142, 142, 147, 0.14);
+
+  --text-1: #1d1d1f;
+  --text-2: rgba(60, 60, 67, 0.72);
+  --text-3: rgba(60, 60, 67, 0.45);
+
+  /* ── 玻璃材质 ── */
+  --glass-bg: rgba(255, 255, 255, 0.58);
+  --glass-bg-thick: rgba(255, 255, 255, 0.78);
+  --glass-bg-thin: rgba(255, 255, 255, 0.4);
+  --glass-stroke: rgba(255, 255, 255, 0.85);
+  --glass-stroke-outer: rgba(120, 130, 160, 0.14);
+  --glass-blur: blur(28px) saturate(180%);
+  --glass-shadow:
+    0 1px 1px rgba(30, 40, 80, 0.04), 0 8px 24px rgba(30, 40, 80, 0.08),
+    0 24px 48px rgba(30, 40, 80, 0.06);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+
+  /* ── 同心圆角 ── */
+  --r-card: 26px;
+  --r-inner: 18px;
+  --r-pill: 999px;
+
+  /* ── 动效（Apple 弹簧曲线） ── */
+  --spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 180ms;
+  --dur-med: 320ms;
+  --dur-slow: 520ms;
+
+  --font-cn: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
+    "Noto Sans SC", sans-serif;
+  --font-num: "Space Grotesk", -apple-system, "SF Pro Display", var(--font-cn);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-cn);
+  color: var(--text-1);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+/* ── 背景：柔光 mesh（浅色不压抑） ── */
+.app-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(52% 42% at 12% 8%, rgba(10, 132, 255, 0.14), transparent 60%),
+    radial-gradient(48% 40% at 88% 12%, rgba(94, 92, 230, 0.12), transparent 60%),
+    radial-gradient(56% 48% at 76% 88%, rgba(48, 209, 88, 0.1), transparent 62%),
+    radial-gradient(44% 38% at 18% 84%, rgba(255, 159, 10, 0.08), transparent 60%),
+    var(--bg-base);
+}
+
+.app-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(2px);
+}
+
+/* ============================================================
+   玻璃基元
+   ============================================================ */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--r-card);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  border: 1px solid var(--glass-stroke-outer);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 玻璃顶部高光带（Liquid Glass 的灵魂） */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.1) 32%,
+    rgba(255, 255, 255, 0) 55%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.glass-thick {
+  background: var(--glass-bg-thick);
+}
+
+.glass-thin {
+  background: var(--glass-bg-thin);
+}
+
+/* ============================================================
+   布局
+   ============================================================ */
+.app {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  padding: 20px 28px 108px;
+  gap: 18px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px;
+}
+
+.app-title {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-title .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 4px var(--ok-soft);
+  animation: breathe 2.6s var(--ease-out) infinite;
+}
+
+.app-title .dot.offline {
+  background: var(--neutral);
+  box-shadow: 0 0 0 4px var(--neutral-soft);
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.app-main {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-right: 4px;
+}
+
+.app-main::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================
+   悬浮胶囊导航（iOS 26 浮动 Tab Bar）
+   ============================================================ */
+.capsule-nav {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-radius: var(--r-pill);
+  background: var(--glass-bg-thick);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  border: 1px solid var(--glass-stroke-outer);
+  z-index: 50;
+  animation: nav-in var(--dur-slow) var(--spring) both;
+}
+
+@keyframes nav-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 26px) scale(0.92);
+  }
+}
+
+.capsule-nav button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-cn);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  padding: 9px 18px;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
+}
+
+.capsule-nav button:hover {
+  color: var(--text-1);
+}
+
+.capsule-nav button.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  box-shadow:
+    0 4px 14px rgba(10, 132, 255, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: scale(1.02);
+}
+
+/* ============================================================
+   通用组件
+   ============================================================ */
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin: 22px 4px 12px;
+}
+
+.section-title:first-child {
+  margin-top: 4px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: var(--font-num);
+  padding: 3.5px 10px;
+  border-radius: var(--r-pill);
+  letter-spacing: 0.01em;
+}
+
+.badge.ok {
+  background: var(--ok-soft);
+  color: #1b8e3a;
+}
+.badge.warn {
+  background: var(--warn-soft);
+  color: #b26a00;
+}
+.badge.danger {
+  background: var(--danger-soft);
+  color: #c72c22;
+}
+.badge.neutral {
+  background: var(--neutral-soft);
+  color: #6e6e73;
+}
+.badge.accent {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+.btn {
+  appearance: none;
+  border: 0;
+  font-family: var(--font-cn);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+  background: var(--glass-bg-thick);
+  color: var(--text-1);
+  border: 1px solid var(--glass-stroke-outer);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  color: #fff;
+  border-color: transparent;
+  box-shadow:
+    0 4px 14px rgba(10, 132, 255, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.btn.danger {
+  background: var(--danger-soft);
+  color: #c72c22;
+}
+
+.btn.ok {
+  background: var(--ok-soft);
+  color: #1b8e3a;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn.small {
+  font-size: 12px;
+  padding: 5px 12px;
+}
+
+/* 数字一律用 Space Grotesk + 等宽数字 */
+.num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* 列表行 */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: var(--r-inner);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.row + .row {
+  box-shadow: inset 0 1px 0 rgba(120, 130, 160, 0.08);
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-sub {
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 优先级条 */
+.prio {
+  width: 88px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(120, 130, 160, 0.16);
+  overflow: hidden;
+  position: relative;
+}
+
+.prio > span {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), #5e5ce6);
+  transform-origin: left;
+  transition: transform var(--dur-slow) var(--spring);
+}
+
+/* 指标卡 */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.stat {
+  padding: 18px 20px;
+}
+
+.stat .k {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+
+.stat .v {
+  font-size: 30px;
+  font-weight: 700;
+  margin-top: 6px;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.stat .v small {
+  font-size: 14px;
+  color: var(--text-3);
+  font-weight: 600;
+  margin-left: 3px;
+}
+
+/* 视图入场动效 */
+.view {
+  animation: view-in var(--dur-med) var(--spring) both;
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+}
+
+/* 行入场（列表动态项） */
+.row-enter {
+  animation: row-in var(--dur-med) var(--spring) both;
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+/* 实时脉冲点 */
+.pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pulse::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  animation: pulse-out 1.4s var(--ease-out) infinite;
+}
+
+@keyframes pulse-out {
+  from {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* 认知环 */
+.loop-wrap {
+  display: grid;
+  grid-template-columns: minmax(320px, 460px) 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .loop-wrap {
+    grid-template-columns: 1fr;
+  }
+}
+
+.loop-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.loop-node {
+  transition: all var(--dur-med) var(--spring);
+}
+
+.loop-node.active circle {
+  filter: drop-shadow(0 0 12px rgba(10, 132, 255, 0.55));
+}
+
+.loop-center-num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 编辑器 */
+.editor {
+  width: 100%;
+  min-height: 420px;
+  border: 0;
+  outline: none;
+  resize: vertical;
+  font-family: "SF Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 20px 22px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: var(--r-inner);
+  color: var(--text-1);
+}
+
+.editor:focus {
+  box-shadow: inset 0 0 0 2px var(--accent-soft);
+}
+
+/* 空态 */
+.empty {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+/* 流式 ticker */
+.ticker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.ticker::-webkit-scrollbar {
+  display: none;
+}
+
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.45);
+  animation: row-in var(--dur-fast) var(--ease-out) both;
+}
+
+.ticker-item .t {
+  font-family: var(--font-num);
+  color: var(--text-3);
+  font-size: 11.5px;
+  flex-shrink: 0;
+}

@@ -62,7 +62,7 @@ class Charter:
 
 def load_charter(path: Path | None = None) -> Charter:
     """加载 charter；文件缺失时回退示例并告警，绝不静默使用空锚定。"""
-    candidates = [path] if path else [Path("data/charter.yaml"), _DEFAULT_CHARTER]
+    candidates = ([path] if path else [Path("data/charter.yaml")]) + [_DEFAULT_CHARTER]
     for p in candidates:
         if p and p.exists():
             try:

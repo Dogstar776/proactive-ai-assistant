@@ -8,8 +8,10 @@ from assistant.api.routes import (
     health,
     introspection,
     stream,
+    system,
 )
 
 __all__ = [
-    "health", "events", "stream", "audit", "collectors", "introspection", "goals", "gateway",
+    "health", "events", "stream", "audit", "collectors", "introspection", "goals",
+    "gateway", "system",
 ]
