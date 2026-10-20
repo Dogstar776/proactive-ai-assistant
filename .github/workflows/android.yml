@@ -32,21 +32,20 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install Android SDK (manual, logged)
+      - name: Install Android SDK packages (use pre-installed SDK)
         continue-on-error: true
         run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          mkdir -p $ANDROID_HOME/cmdline-tools
-          curl -sSL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o /tmp/cmdtools.zip
-          unzip -q /tmp/cmdtools.zip -d $ANDROID_HOME/cmdline-tools
-          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-          SDK=$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager
-          echo "sdkmanager: $SDK"
-          yes | "$SDK" --licenses >/dev/null 2>&1 || true
-          "$SDK" "platforms;android-35" "build-tools;35.0.0" "platform-tools" 2>&1 | tee sdk.log
-          echo "--- sdkmanager list installed ---"
-          "$SDK" --list_installed 2>&1 | tail -10 | tee -a sdk.log
+          # ubuntu-latest 已预装 Android SDK，直接用它；两个环境变量必须指向同一路径，否则 AGP 报错
+          SDK_DIR="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          echo "Using SDK at: $SDK_DIR"
+          echo "ANDROID_HOME=$SDK_DIR" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
+          SDK_CMD="$(command -v sdkmanager || echo "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager")"
+          echo "sdkmanager: $SDK_CMD"
+          yes | "$SDK_CMD" --licenses >/dev/null 2>&1 || true
+          "$SDK_CMD" "platforms;android-35" "build-tools;35.0.0" "platform-tools" 2>&1 | tee sdk.log
+          echo "--- installed packages ---"
+          "$SDK_CMD" --list_installed 2>&1 | tail -15 | tee -a sdk.log
 
       - name: Setup Gradle
         continue-on-error: true

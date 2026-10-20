@@ -4,16 +4,21 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,7 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,6 +55,8 @@ fun SettingsScreen(vm: CosmosViewModel, onBack: () -> Unit) {
     var url by remember(config.baseUrl) { mutableStateOf(config.baseUrl) }
     var key by remember(config.apiKey) { mutableStateOf(config.apiKey) }
     var model by remember(config.model) { mutableStateOf(config.model) }
+    val clipboard = LocalClipboardManager.current
+    var showLog by remember { mutableStateOf(false) }
 
     Column(
         Modifier.fillMaxSize()
@@ -79,13 +90,49 @@ fun SettingsScreen(vm: CosmosViewModel, onBack: () -> Unit) {
         Text("实验日志（14 天收集）", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Bold)
         Text("已记录 ${vm.logCount()} 条交互", fontSize = 12.sp, color = Color.White.copy(alpha = 0.6f))
         Spacer(Modifier.height(8.dp))
-        Button(onClick = { exportLog(context, vm.exportLog()) },
+        Button(onClick = {
+            val text = vm.exportLog()
+            clipboard.setText(AnnotatedString(text))
+            android.widget.Toast.makeText(
+                context, "已复制日志（${text.length} 字符）到剪贴板，直接粘贴发给对方",
+                android.widget.Toast.LENGTH_LONG,
+            ).show()
+        },
             Modifier.fillMaxWidth().padding(vertical = 4.dp),
-            shape = RoundedCornerShape(14.dp)) { Text("导出日志并分享") }
+            shape = RoundedCornerShape(14.dp)) { Text("① 复制日志内容（粘给对方）") }
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = { showLog = true },
+            Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            shape = RoundedCornerShape(14.dp)) { Text("② 预览日志") }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = { exportLog(context, vm.exportLog()) },
+            Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            shape = RoundedCornerShape(14.dp)) { Text("③ 导出日志文件并分享") }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = { vm.clearConfig(); onBack() },
             Modifier.fillMaxWidth().padding(vertical = 4.dp),
             shape = RoundedCornerShape(14.dp)) { Text("清除配置（回到演示模式）") }
+    }
+
+    if (showLog) {
+        AlertDialog(
+            onDismissRequest = { showLog = false },
+            title = { Text("14 天实验日志（JSONL）") },
+            text = {
+                Box(Modifier.heightIn(max = 420.dp)) {
+                    Text(
+                        text = vm.exportLog().ifBlank { "（暂无记录，先对话几句再来）" },
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLog = false }) { Text("关闭") }
+            },
+        )
     }
 }
 
