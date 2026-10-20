@@ -1,5 +1,6 @@
-# ── 运行时数据（本地优先，永不入库） ──
-data/
+# ── 运行时数据（本地优先，永不入库；仅后端，勿误伤 android Kotlin 源码包 data/） ──
+/data/
+assistant/data/
 *.db
 *.sqlite
 *.sqlite3
