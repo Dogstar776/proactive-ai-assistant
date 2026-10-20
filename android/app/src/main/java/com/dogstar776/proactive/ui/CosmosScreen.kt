@@ -176,10 +176,12 @@ fun CosmosScreen(vm: CosmosViewModel) {
         }
     }
 
-    // TTS 初始化
+    // TTS 初始化（用 holder 避免在自身初始化 lambda 内引用尚未赋值的实例）
     DisposableEffect(Unit) {
-        val t = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
+        var holder: TextToSpeech? = null
+        holder = TextToSpeech(context) { status ->
+            val t = holder
+            if (t != null && status == TextToSpeech.SUCCESS) {
                 t.language = Locale.SIMPLIFIED_CHINESE
                 ttsReady.value = true
                 t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -189,8 +191,8 @@ fun CosmosScreen(vm: CosmosViewModel) {
                 })
             }
         }
-        tts.value = t
-        onDispose { t.stop(); t.shutdown() }
+        tts.value = holder
+        onDispose { holder?.stop(); holder?.shutdown() }
     }
 
     // 语音识别初始化

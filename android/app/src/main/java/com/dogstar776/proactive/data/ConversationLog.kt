@@ -1,5 +1,6 @@
 package com.dogstar776.proactive.data
 
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.time.Instant
