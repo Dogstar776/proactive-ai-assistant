@@ -117,15 +117,61 @@ jobs:
                   o.write("build_ok=%s\n" % ("true" if ok else "false"))
           PY
 
-      - name: Upload APK as GitHub Release (permanent download link)
-        if: steps.diag.outputs.build_ok == 'true'
-        uses: softprops/action-gh-release@v2
+      - name: Upload APK artifact (always, guaranteed download)
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          tag: v0.6.0-apk
-          name: 星空调伴 APK（调试版）
-          prerelease: true
-          overwrite: true
-          files: android/app/build/outputs/apk/debug/*.apk
+          name: proactive-assistant-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
+      - name: Publish APK as GitHub Release (direct API, permanent link)
+        if: steps.diag.outputs.build_ok == 'true'
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import os, json, urllib.request, urllib.error, urllib.parse
+          REPO = "https://api.github.com/repos/Dogstar776/proactive-ai-assistant"
+          UP = "https://uploads.github.com/repos/Dogstar776/proactive-ai-assistant"
+          TAG = "v0.6.0-apk"
+          tok = os.environ.get("GITHUB_TOKEN", "")
+          def H(extra=None):
+              h = {"Authorization": "Bearer " + tok, "Accept": "application/vnd.github+json"}
+              if extra: h.update(extra)
+              return h
+          apk_dir = "app/build/outputs/apk/debug"
+          apks = [f for f in os.listdir(apk_dir) if f.endswith(".apk")] if os.path.isdir(apk_dir) else []
+          if not apks:
+              print("no apk found in", apk_dir); raise SystemExit(0)
+          path = os.path.join(apk_dir, apks[0]); name = apks[0]
+          print("publishing", path, os.path.getsize(path), "bytes")
+          # 同 tag 旧 release 先删，保证可重复发布
+          try:
+              r = urllib.request.urlopen(urllib.request.Request(REPO + "/releases/tags/" + TAG, headers=H()))
+              old = json.loads(r.read().decode())
+              urllib.request.urlopen(urllib.request.Request(
+                  REPO + "/releases/%d" % old["id"], method="DELETE", headers=H())).read()
+              print("deleted old release", old["id"])
+          except Exception as e:
+              print("no old release:", e)
+          body = json.dumps({"tag_name": TAG, "name": "星空调伴 APK（调试版）",
+                             "prerelease": True, "body": "由 CI 自动构建发布，供手机直接下载安装。"}).encode()
+          try:
+              r = urllib.request.urlopen(urllib.request.Request(
+                  REPO + "/releases", data=body, method="POST", headers=H({"Content-Type": "application/json"})))
+              rel = json.loads(r.read().decode())
+          except urllib.error.HTTPError as e:
+              print("create release err", e.code, e.read().decode()[:300]); raise SystemExit(0)
+          up = rel["upload_url"].split("{")[0] + "?name=" + urllib.parse.quote(name)
+          data = open(path, "rb").read()
+          try:
+              r = urllib.request.urlopen(urllib.request.Request(
+                  up, data=data, method="POST",
+                  headers=H({"Content-Type": "application/octet-stream"})))
+              print("asset uploaded:", r.status)
+          except urllib.error.HTTPError as e:
+              print("upload asset err", e.code, e.read().decode()[:300])
+          PY
 
       - name: Upload build log
         if: always()
