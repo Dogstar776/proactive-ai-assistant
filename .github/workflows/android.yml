@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
 jobs:
@@ -72,18 +72,20 @@ jobs:
             print("ERR", e.code, e.read().decode()[:300])
           PY
 
+      - name: Upload APK as GitHub Release (permanent download link)
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag: v0.6.0-apk
+          name: 星空调伴 APK（调试版）
+          prerelease: true
+          overwrite: true
+          files: android/app/build/outputs/apk/debug/*.apk
+
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: android-build-log
           path: android/build.log
-          if-no-files-found: warn
-
-      - name: Upload APK
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: proactive-assistant-debug
-          path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
