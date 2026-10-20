@@ -32,25 +32,35 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages & accept licenses
+        run: |
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
 
-      - name: Unit tests (capture log)
-        continue-on-error: true
+      - name: Unit tests
         run: gradle testDebugUnitTest --no-daemon --stacktrace 2>&1 | tee build.log
 
-      - name: Build Debug APK (capture log)
-        continue-on-error: true
+      - name: Build Debug APK
         run: gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee -a build.log
 
-      - name: Publish build diagnostics
-        if: always()
+      - name: Publish build diagnostics on failure
+        if: failure()
         run: |
           python3 - <<'PY'
           import os, json, urllib.request, urllib.error
           tok = os.environ.get("GITHUB_TOKEN","")
           log = open("build.log", encoding="utf-8", errors="replace").read()[-30000:]
-          data = json.dumps({"title":"Android build diagnostics (auto)","body":log}).encode("utf-8")
+          body = "## Android build failed\n\n```\n" + log + "\n```"
+          data = json.dumps({"title":"Android build diagnostics (auto)","body":body}).encode("utf-8")
           req = urllib.request.Request(
             "https://api.github.com/repos/Dogstar776/proactive-ai-assistant/issues",
             data=data, method="POST",
@@ -61,6 +71,14 @@ jobs:
           except urllib.error.HTTPError as e:
             print("ERR", e.code, e.read().decode()[:300])
           PY
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-log
+          path: android/build.log
+          if-no-files-found: warn
 
       - name: Upload APK
         if: always()
