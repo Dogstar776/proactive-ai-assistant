@@ -46,10 +46,21 @@ jobs:
       - name: Publish build diagnostics
         if: always()
         run: |
-          tail -n 4000 build.log > /tmp/diag.txt
-          gh issue create --repo Dogstar776/proactive-ai-assistant \
-            --title "Android build diagnostics (auto)" \
-            --body-file /tmp/diag.txt || true
+          python3 - <<'PY'
+          import os, json, urllib.request, urllib.error
+          tok = os.environ.get("GITHUB_TOKEN","")
+          log = open("build.log", encoding="utf-8", errors="replace").read()[-30000:]
+          data = json.dumps({"title":"Android build diagnostics (auto)","body":log}).encode("utf-8")
+          req = urllib.request.Request(
+            "https://api.github.com/repos/Dogstar776/proactive-ai-assistant/issues",
+            data=data, method="POST",
+            headers={"Authorization":"Bearer "+tok,"Content-Type":"application/json","Accept":"application/vnd.github+json"})
+          try:
+            with urllib.request.urlopen(req) as r:
+              print("created issue:", r.read().decode()[:200])
+          except urllib.error.HTTPError as e:
+            print("ERR", e.code, e.read().decode()[:300])
+          PY
 
       - name: Upload APK
         if: always()
