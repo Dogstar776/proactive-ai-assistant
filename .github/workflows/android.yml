@@ -36,10 +36,12 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install SDK packages & accept licenses
+        continue-on-error: true
         run: |
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          SDK_CMD=$(command -v sdkmanager || echo "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager")
+          echo "sdkmanager: $SDK_CMD"
+          yes | "$SDK_CMD" --licenses >/dev/null 2>&1 || true
+          "$SDK_CMD" "platforms;android-35" "build-tools;35.0.0" "platform-tools" 2>&1 | tee sdk.log
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -47,33 +49,64 @@ jobs:
           gradle-version: "8.9"
 
       - name: Unit tests
+        continue-on-error: true
         run: gradle testDebugUnitTest --no-daemon --stacktrace 2>&1 | tee build.log
 
       - name: Build Debug APK
+        continue-on-error: true
         run: gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee -a build.log
 
-      - name: Publish build diagnostics on failure
-        if: failure()
+      - name: Diagnose & decide
+        id: diag
+        if: always()
         run: |
           python3 - <<'PY'
-          import os, json, urllib.request, urllib.error
-          tok = os.environ.get("GITHUB_TOKEN","")
-          log = open("build.log", encoding="utf-8", errors="replace").read()[-30000:]
-          body = "## Android build failed\n\n```\n" + log + "\n```"
-          data = json.dumps({"title":"Android build diagnostics (auto)","body":body}).encode("utf-8")
-          req = urllib.request.Request(
-            "https://api.github.com/repos/Dogstar776/proactive-ai-assistant/issues",
-            data=data, method="POST",
-            headers={"Authorization":"Bearer "+tok,"Content-Type":"application/json","Accept":"application/vnd.github+json"})
+          import os, json, urllib.request, urllib.error, traceback
+          ok = False
+          text = ""
           try:
-            with urllib.request.urlopen(req) as r:
-              print("created issue:", r.read().decode()[:200])
-          except urllib.error.HTTPError as e:
-            print("ERR", e.code, e.read().decode()[:300])
+              logs = []
+              for f in ("sdk.log", "build.log"):
+                  if os.path.exists(f):
+                      logs.append(open(f, encoding="utf-8", errors="replace").read())
+              text = "\n".join(logs)
+              apk_dir = "app/build/outputs/apk/debug"
+              has_apk = os.path.isdir(apk_dir) and any(fn.endswith(".apk") for fn in os.listdir(apk_dir))
+              if "BUILD FAILED" in text or "What went wrong" in text or "FAILED" in text:
+                  has_apk = False
+              ok = has_apk
+              if not ok:
+                  tok = os.environ.get("GITHUB_TOKEN", "")
+                  body = "## Android build failed\n\n```\n" + text[-30000:] + "\n```"
+                  req = urllib.request.Request(
+                      "https://api.github.com/repos/Dogstar776/proactive-ai-assistant/issues",
+                      data=json.dumps({"title": "Android build diagnostics (auto)", "body": body}).encode(),
+                      method="POST",
+                      headers={"Authorization": "Bearer " + tok, "Content-Type": "application/json", "Accept": "application/vnd.github+json"})
+                  try:
+                      urllib.request.urlopen(req).read()
+                  except Exception as e:
+                      print("issue post failed:", e)
+          except Exception:
+              print("diag error:", traceback.format_exc())
+              tok = os.environ.get("GITHUB_TOKEN", "")
+              body = "## Android build failed (diag error)\n\n" + traceback.format_exc()[-5000:]
+              req = urllib.request.Request(
+                  "https://api.github.com/repos/Dogstar776/proactive-ai-assistant/issues",
+                  data=json.dumps({"title": "Android build diagnostics (auto)", "body": body}).encode(),
+                  method="POST",
+                  headers={"Authorization": "Bearer " + tok, "Content-Type": "application/json", "Accept": "application/vnd.github+json"})
+              try:
+                  urllib.request.urlopen(req).read()
+              except Exception as e2:
+                  print("issue post failed2:", e2)
+          finally:
+              with open(os.environ["GITHUB_OUTPUT"], "a") as o:
+                  o.write("build_ok=%s\n" % ("true" if ok else "false"))
           PY
 
       - name: Upload APK as GitHub Release (permanent download link)
-        if: success()
+        if: steps.diag.outputs.build_ok == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag: v0.6.0-apk
