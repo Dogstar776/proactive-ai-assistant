@@ -1,75 +1,47 @@
-# 安卓 APK · 主动式 AI 助理客户端
+# 安卓 APK · 星空调伴（主动式 AI 伙伴）
 
-手机端的"主动式"闭环：后台每 15 分钟同步一次后端，把门控放行的提醒转成本地通知，
-待确认事项从通知栏直接批准/拒绝——**无需打开应用**。
+手机端的「星空对话伴侣」：打开即是一片缓缓闪烁的宇宙，中央光晕随对话状态流转。
+它一直听着你说话；你说「多等我一会」，光晕安静收缩、耐心等待；你说「说完了 / 继续」，
+它才在后台思考、开口回应。所有逻辑在本机，加入大模型 API Key 即可真实对话。
 
-## 架构
+## 交互（状态机）
 
-```
-┌────────────────────────────┐         ┌──────────────────────────────┐
-│  安卓 APK（本目录）          │  HTTPS  │  后端（assistant/，你的电脑）  │
-│  Jetpack Compose + MVVM    │ ──────► │  FastAPI :8787               │
-│  · 连接配置（URL + API Key）│ X-API-Key│  · API Key 鉴权（可选开启）   │
-│  · 认知环 / 提醒 / 目标 / 事件│ ◄────── │  · 四态门控 / 提醒引擎        │
-│  · WorkManager 15min 轮询   │  JSON   │  · SSE（Web 仪表盘专用）      │
-│  · 通知 + 批准/拒绝动作      │         └──────────────────────────────┘
-└────────────────────────────┘
-```
+| 状态 | 光晕 | 含义 |
+|---|---|---|
+| 聆听 LISTENING | 冰蓝脉冲 | 一直听着，实时转写 |
+| 等待 WAITING | 暗紫收缩 | 你说「多等我一会」，它屏息等你讲完 |
+| 思考 THINKING | 极光流转 | 你说「说完了」，它调用大模型 |
+| 说话 SPEAKING | 暖金呼吸 | 它把回答念给你听，念完回到聆听 |
 
-移动端用轮询而非 SSE：省电与保活的权衡，频率由后端 charter 的
-`intervention_budget` 与免打扰共同控制（双端共治，论文 3.5）。
+> 「等待 / 继续」意图由本地规则即时判定（`WaitGesture`），不依赖网络，保证信任。
 
 ## 加入 APIKEY 即可使用
 
-两步：
+首次启动填写：**API 地址**（默认 `https://api.openai.com/v1`，兼容任意 OpenAI 接口）、
+**API Key**（必填，仅存本机）、**模型**（默认 `gpt-4o-mini`）。
+也可先点「演示模式」体验（无 Key 时返回本地兜底回应）。
 
-**1. 电脑端跑后端**（`assistant/` 目录）：
-
-```bash
-# .env 里设置（.env.example 有模板）
-API_KEY=你的密钥
-# 监听所有网卡，手机才能通过局域网访问
-uvicorn assistant.api.app:create_app --factory --host 0.0.0.0 --port 8787
-```
-
-> 不设 `API_KEY` 时后端不鉴权（本地单用户模式）；设了之后 `/api/v1/*` 要求
-> `X-API-Key` 头，本 APK 会自动带上。
-
-**2. 手机端装 APK**：
-
-- CI 构建：GitHub Actions 每次推送自动构建，从仓库 Actions → "android" workflow
-  → Artifacts 下载 `proactive-assistant-debug.apk`（见 `.github/workflows/android.yml`）
-- 本地构建：`gradle assembleDebug`（需要 JDK 17 + Android SDK）
-- 安装后首次启动填两个值：**后端地址**（如 `http://192.168.1.5:8787`，手机与电脑
-  同一 Wi-Fi 填电脑局域网 IP，`ipconfig` 可查）+ **API Key**（后端没设就留空）
-
-## 功能（与 Web 仪表盘 1:1，不阉割）
-
-| 界面 | 内容 |
-|---|---|
-| 认知环 | 观测事件/活跃目标/7 日请示统计 + 三个周期按钮（轻观测/深周期/门控） |
-| 提醒 | 待确认队列（批准/拒绝）+ 干预台账（含被沉默的及原因） |
-| 目标 | 优先级队列 + template-based 徽章 + 成功判据 |
-| 事件 | 事件流 + 类型筛选 + provenance/depth |
-| 设置 | 后端地址/API Key + 运行状态（Provider/预算）+ 清除配置 |
+- **CI 构建**：GitHub Actions 每次推送自动构建。从仓库 → Actions → `android` workflow
+  → Artifacts 下载 `proactive-assistant-debug.apk`（见 `.github/workflows/android.yml`）。
+- **本地构建**：`gradle assembleDebug`（需 JDK 17 + Android SDK）。
+- 需要麦克风权限（用于语音聆听）；若设备无语音识别，自动回落为文字输入框。
 
 ## 工程细节
 
-- **minSdk 26 / targetSdk 35**；Kotlin 2.0 + Compose BOM + Material3（动态取色）
-- **MVVM**：`Repository` 单一数据源，`AppViewModel` 管理 `UiState`（Loading/Ready/Failed）
-- **配置持久化**：DataStore Preferences（baseUrl / apiKey / 已通知 ID 去重）
-- **鉴权**：`AuthInterceptor` 注入 `X-API-Key`；401 → "API Key 无效"可读文案
-- **后台同步**：`SyncWorker` 周期 15 分钟（NetworkType.CONNECTED 约束），
-  失败自动退避重试；通知去重靠 DataStore 记录已通知 ID
-- **通知**：两个频道（主动提醒 DEFAULT / 待确认 HIGH），待确认带批准/拒绝动作，
-  `ReminderActionReceiver` 直接调后端闭环
-- **错误处理**：异常映射可读文案（UnknownHost/Connect/Timeout/401/404 各有文案）
-- **测试**：JUnit 单测覆盖 URL 规范化、通知挑选逻辑、鉴权头注入
+- **minSdk 26 / targetSdk 35**；Kotlin 2.0 + Compose BOM + Material3
+- **星空前台**：`ui/cosmos/CosmosStage.kt` 用 Compose Canvas 绘制星海 + 径向渐变光晕 + 极光/声波
+- **状态机与语音**：`ui/CosmosScreen.kt` 用 `SpeechRecognizer`（聆听）+ `TextToSpeech`（念出）+
+  本地 `WaitGesture` 判定等待/继续，编排 LISTENING→WAITING→THINKING→SPEAKING 闭环
+- **大模型直连**：`data/LlmClient.kt` 调 OpenAI 兼容 `/chat/completions`，无后端依赖
+- **配置持久化**：DataStore Preferences（baseUrl / apiKey / model）
+- **实验日志**：`data/ConversationLog.kt` 把每轮对话、状态切换、等待意图写入本地 JSONL，
+  14 天实验结束后在「设置 → 导出日志并分享」通过 FileProvider 分享给研究者分析
+- **测试**：JUnit 单测覆盖 `WaitGesture` 意图、URL 规范化、对话序列化、日志写入
   （`gradle testDebugUnitTest`）
 
 ## 已知边界（诚实声明）
 
-- 轮询间隔 15 分钟是系统建议值，Doze 模式下可能更长——"主动"的实时性弱于 Web 端 SSE，
-  这是移动端省电约束的自觉取舍，不是缺陷掩饰；
-- 通知依赖系统权限，用户拒绝时静默降级；
-- 后端需手机可达（同一局域网或公网部署）；暂未做内网穿透与 TLS 固定。
+- 语音识别依赖设备上的识别引擎（多为 Google 服务）；无该引擎时自动回落文字输入
+- 语音聆听为连续模式，识别超时/无匹配会自动续听（上限 12 次/轮），避免死循环靠手动麦克风键
+- 大模型调用走网络，需本机可访问所填 API 地址；失败会显示错误文案并回到聆听
+- 配置与日志仅存本机，不上传任何服务器（演示/自托管均可）

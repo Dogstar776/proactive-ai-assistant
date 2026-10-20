@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:name=".ProactiveApplication"
@@ -19,7 +19,6 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Proactive">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,9 +26,15 @@
             </intent-filter>
         </activity>
 
-        <!-- 提醒动作（批准/拒绝）：从通知直接闭环，无需打开应用 -->
-        <receiver
-            android:name=".sync.ReminderActionReceiver"
-            android:exported="false" />
+        <!-- 导出 14 天实验日志（FileProvider 分享，不暴露真实路径） -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>
